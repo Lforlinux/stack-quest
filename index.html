@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StackQuest</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="logo">StackQuest</h1>
+            <p class="description">A quest for stack knowledge across DevOps, SRE, and Cloud engineering.</p>
+        </header>
+        
+        <main class="main">
+            <div id="loadingIndicator" class="loading-indicator">
+                <div class="loading-spinner"></div>
+                <p>Loading questions and challenges...</p>
+            </div>
+            
+            <div class="buttons">
+                <button id="randomBtn" class="btn btn-primary">
+                    <span class="btn-icon">🎲</span>
+                    Random Question
+                </button>
+                <button id="challengeBtn" class="btn btn-secondary">
+                    <span class="btn-icon">⚡</span>
+                    Challenge
+                </button>
+            </div>
+            
+            <div id="categorySelection" class="category-selection hidden">
+                <h3>Select Categories for Random Questions</h3>
+                <div class="category-grid">
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="linux" checked>
+                        <span class="checkmark"></span>
+                        Linux 🐧
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="networking" checked>
+                        <span class="checkmark"></span>
+                        Networking 🌐
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="git" checked>
+                        <span class="checkmark"></span>
+                        Git
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="aws" checked>
+                        <span class="checkmark"></span>
+                        AWS 🌩️
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="terraform" checked>
+                        <span class="checkmark"></span>
+                        Terraform 🏗️
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="docker" checked>
+                        <span class="checkmark"></span>
+                        Docker 🐳
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="kubernetes" checked>
+                        <span class="checkmark"></span>
+                        Kubernetes 🎻
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="devops" checked>
+                        <span class="checkmark"></span>
+                        DevOps 🛠
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="cicd" checked>
+                        <span class="checkmark"></span>
+                        CI/CD 🔄
+                    </label>
+                </div>
+                <div class="category-actions">
+                    <button id="selectAllBtn" class="btn btn-small">Select All</button>
+                    <button id="deselectAllBtn" class="btn btn-small">Deselect All</button>
+                    <button id="getQuestionBtn" class="btn btn-primary">Get Random Question</button>
+                </div>
+            </div>
+
+            <div id="challengeCategorySelection" class="category-selection hidden">
+                <h3>Select Categories for Random Challenge</h3>
+                <div class="category-grid">
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="kubernetes" checked>
+                        <span class="checkmark"></span>
+                        Kubernetes ☸️
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="terraform" checked>
+                        <span class="checkmark"></span>
+                        Terraform 🏗️
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="docker" checked>
+                        <span class="checkmark"></span>
+                        Docker 🐳
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="ansible" checked>
+                        <span class="checkmark"></span>
+                        Ansible 🔧
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="aws" checked>
+                        <span class="checkmark"></span>
+                        AWS ☁️
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="security" checked>
+                        <span class="checkmark"></span>
+                        Security 🔒
+                    </label>
+                    <label class="category-checkbox">
+                        <input type="checkbox" value="monitoring" checked>
+                        <span class="checkmark"></span>
+                        Monitoring 📊
+                    </label>
+                </div>
+                <div class="category-actions">
+                    <button id="selectAllChallengeBtn" class="btn btn-small">Select All</button>
+                    <button id="deselectAllChallengeBtn" class="btn btn-small">Deselect All</button>
+                    <button id="getChallengeBtn" class="btn btn-primary">Get Random Challenge</button>
+                </div>
+            </div>
+            
+            <div id="result" class="result hidden">
+                <div class="result-content">
+                    <h3 id="resultTitle"></h3>
+                    <div id="resultBody"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
