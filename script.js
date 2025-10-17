@@ -1,42 +1,92 @@
-// Questions will be loaded dynamically from questions&answers.md
+// Questions will be loaded dynamically from individual category files
 let questions = {};
 let questionsLoaded = false;
 
-// Challenges will be loaded dynamically from devops-challenges.md
+// Challenges will be loaded dynamically from individual challenge files
 let challenges = [];
 let challengesLoaded = false;
 
-// Fetch and parse questions from questions&answers.md
+    // Category file mapping
+    const categoryFiles = {
+        'linux': 'Random-Questions/linux.md',
+        'networking': 'Random-Questions/networking.md',
+        'git': 'Random-Questions/git.md',
+        'aws': 'Random-Questions/aws.md',
+        'azure': 'Random-Questions/azure.md',
+        'cloud': ['Random-Questions/aws.md', 'Random-Questions/azure.md'], // Special case: multiple files
+        'terraform': 'Random-Questions/terraform.md',
+        'docker': 'Random-Questions/docker.md',
+        'kubernetes': 'Random-Questions/kubernetes.md',
+        'config-management': 'Random-Questions/config-management.md',
+        'cicd': 'Random-Questions/cicd.md',
+        'devops': 'Random-Questions/devops.md',
+        'system-design': 'Random-Questions/system-design.md',
+        'security': 'Random-Questions/security.md'
+    };
+
+// Challenge file mapping
+const challengeFiles = {
+    'devops': 'Challenge/devops-challenges.md',
+    'sre': 'Challenge/SRE-challenge.md',
+    'aws': 'Challenge/aws-challenge.md',
+    'kubernetes': 'Challenge/kubernetes-challenge.md'
+};
+
+// Fetch and parse questions from individual category files
 async function loadQuestionsFromReadme() {
     try {
-        const response = await fetch('questions&answers.md');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        questions = {};
+        let totalQuestions = 0;
+        
+        // Load each category file
+        for (const [category, filePath] of Object.entries(categoryFiles)) {
+            try {
+                // Handle special case where category maps to multiple files (like 'cloud')
+                if (Array.isArray(filePath)) {
+                    questions[category] = [];
+                    for (const path of filePath) {
+                        const response = await fetch(path);
+                        if (response.ok) {
+                            const content = await response.text();
+                            const categoryQuestions = parseQuestionsFromContent(content, category);
+                            questions[category] = questions[category].concat(categoryQuestions);
+                            totalQuestions += categoryQuestions.length;
+                            console.log(`Loaded ${categoryQuestions.length} questions from ${path} for ${category}`);
+                        } else {
+                            console.warn(`Failed to load ${path}: ${response.status}`);
+                        }
+                    }
+                } else {
+                    // Single file case
+                    const response = await fetch(filePath);
+                    if (response.ok) {
+                        const content = await response.text();
+                        const categoryQuestions = parseQuestionsFromContent(content, category);
+                        questions[category] = categoryQuestions;
+                        totalQuestions += categoryQuestions.length;
+                        console.log(`Loaded ${categoryQuestions.length} questions from ${filePath}`);
+                    } else {
+                        console.warn(`Failed to load ${filePath}: ${response.status}`);
+                        questions[category] = [];
+                    }
+                }
+            } catch (error) {
+                console.error(`Error loading ${filePath}:`, error);
+                questions[category] = [];
+            }
         }
-        const content = await response.text();
         
-        // Parse the content to extract questions
-        const parsedQuestions = parseQuestionsFromContent(content);
+        // Check if we have any valid questions
+        const hasValidQuestions = totalQuestions > 0;
         
-        // Check if we have any valid questions (not just placeholders)
-        const hasValidQuestions = Object.values(parsedQuestions).some(category => category.length > 0);
-        
-        // Ensure CI/CD questions are always available (they use different parsing)
-        if (parsedQuestions.cicd && parsedQuestions.cicd.length === 0) {
-            // If CI/CD parsing failed, use fallback CI/CD questions
-            parsedQuestions.cicd = getFallbackQuestions().cicd;
-        }
-        
-        if (hasValidQuestions) {
-            questions = parsedQuestions;
-            console.log('Questions loaded successfully from questions&answers.md:', Object.keys(questions).map(cat => `${cat}: ${questions[cat].length} questions`));
-        } else {
+        if (!hasValidQuestions) {
             // Use fallback questions if no valid questions found
             questions = getFallbackQuestions();
-            console.log('Using fallback questions - no valid questions found in questions&answers.md');
+            console.log('Using fallback questions - no valid questions found in category files');
         }
         
         questionsLoaded = true;
+        console.log(`Total questions loaded: ${totalQuestions} across ${Object.keys(questions).length} categories`);
         return hasValidQuestions;
     } catch (error) {
         console.error('Error loading questions:', error);
@@ -47,28 +97,41 @@ async function loadQuestionsFromReadme() {
     }
 }
 
-// Fetch and parse challenges from devops-challenges.md
+// Fetch and parse challenges from individual challenge files
 async function loadChallengesFromReadme() {
     try {
-        const response = await fetch('devops-challenges.md');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        challenges = [];
+        let totalChallenges = 0;
+        
+        // Load each challenge file
+        for (const [category, filePath] of Object.entries(challengeFiles)) {
+            try {
+                const response = await fetch(filePath);
+                if (response.ok) {
+                    const content = await response.text();
+                    const categoryChallenges = parseChallengesFromContent(content, category);
+                    challenges = challenges.concat(categoryChallenges);
+                    totalChallenges += categoryChallenges.length;
+                    console.log(`Loaded ${categoryChallenges.length} challenges from ${filePath}`);
+                } else {
+                    console.warn(`Failed to load ${filePath}: ${response.status}`);
+                }
+            } catch (error) {
+                console.error(`Error loading ${filePath}:`, error);
+            }
         }
-        const content = await response.text();
         
-        // Parse the content to extract challenges
-        const parsedChallenges = parseChallengesFromContent(content);
-        challenges = parsedChallenges;
+        // Check if we have any valid challenges
+        const hasValidChallenges = totalChallenges > 0;
+        
+        if (!hasValidChallenges) {
+            // Use fallback challenges if no valid challenges found
+            challenges = getFallbackChallenges();
+            console.log('Using fallback challenges - no valid challenges found in challenge files');
+        }
+        
         challengesLoaded = true;
-        
-        console.log('Challenges loaded successfully:', challenges.length, 'challenges');
-        console.log('First few challenges:', challenges.slice(0, 3).map(c => ({ 
-            title: c.title, 
-            difficulty: c.difficulty, 
-            category: c.category,
-            contentLength: c.content.length,
-            contentPreview: c.content.substring(0, 200) + '...'
-        })));
+        console.log(`Total challenges loaded: ${totalChallenges} from ${Object.keys(challengeFiles).length} challenge files`);
         
         // Debug: Check if any challenge has multiple challenges in content
         challenges.forEach((challenge, index) => {
@@ -77,7 +140,7 @@ async function loadChallengesFromReadme() {
             }
         });
         
-        return true;
+        return hasValidChallenges;
     } catch (error) {
         console.error('Error loading challenges:', error);
         // Fallback to a basic set of challenges
@@ -87,14 +150,15 @@ async function loadChallengesFromReadme() {
     }
 }
 
-// Parse challenges from README content
-function parseChallengesFromContent(content) {
+// Parse challenges from challenge file content
+function parseChallengesFromContent(content, category) {
     const challenges = [];
     const lines = content.split('\n');
     
     let currentChallenge = null;
     let challengeContent = [];
     let inChallengeSection = false;
+    
     
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -117,16 +181,16 @@ function parseChallengesFromContent(content) {
                 title = difficultyMatch[1].trim();
                 difficulty = difficultyMatch[2].trim();
             } else {
-                // Try to extract difficulty from the title itself
+                // Just use the title as is, difficulty will be found in content or default to Basic
                 title = titleWithDifficulty.trim();
-                difficulty = extractDifficultyFromTitle(title);
+                difficulty = 'Basic'; // Default, will be updated if found in content
             }
             
             // Start new challenge
             currentChallenge = {
                 title: title,
                 difficulty: difficulty,
-                category: extractCategoryFromTitle(title),
+                category: category,
                 content: ''
             };
             challengeContent = [];
@@ -134,13 +198,29 @@ function parseChallengesFromContent(content) {
             continue;
         }
         
+        // Skip non-challenge headers and table of contents
+        if (line.startsWith('## ') && !challengeMatch) {
+            // This is a section header, not a challenge
+            continue;
+        }
+        
         // Collect content for current challenge
         if (inChallengeSection && currentChallenge) {
+            // Look for difficulty markers in content
+            const difficultyMatch = line.match(/^\*\*Difficulty\*\*:\s*(.+)$/);
+            if (difficultyMatch) {
+                currentChallenge.difficulty = difficultyMatch[1].trim();
+                continue;
+            }
+            
             // Stop collecting when we hit the end of challenges section
             if (line.startsWith('Go to the top of the page link') ||
                 line.startsWith('[Top](#devops-challenges)') ||
                 line.startsWith('## 41.') ||
-                line.startsWith('## 42.')) {
+                line.startsWith('## 42.') ||
+                line.startsWith('## Contributing') ||
+                line.startsWith('## License') ||
+                line.startsWith('*More challenges coming soon!')) {
                 // Save current challenge and stop
                 if (challengeContent.length > 0) {
                     currentChallenge.content = challengeContent.join('\n').trim();
@@ -156,7 +236,7 @@ function parseChallengesFromContent(content) {
             }
             
             // Add content line
-            if (line) {
+            if (line || challengeContent.length > 0) {
                 challengeContent.push(lines[i]);
             }
         }
@@ -232,7 +312,7 @@ function extractCategoryFromTitle(title) {
     if (titleLower.includes('k8s') || titleLower.includes('kubernetes')) return 'Kubernetes';
     if (titleLower.includes('terraform')) return 'Terraform';
     if (titleLower.includes('docker')) return 'Docker';
-    if (titleLower.includes('ansible')) return 'Ansible';
+    if (titleLower.includes('ansible')) return 'Config Management';
     if (titleLower.includes('aws')) return 'AWS';
     if (titleLower.includes('azure')) return 'Azure';
     if (titleLower.includes('gcp')) return 'GCP';
@@ -275,70 +355,16 @@ function getFallbackChallenges() {
 }
 
 // Parse questions from README content
-function parseQuestionsFromContent(content) {
-    const questions = {
-        linux: [],
-        networking: [],
-        git: [],
-        aws: [],
-        terraform: [],
-        docker: [],
-        kubernetes: [],
-        devops: [],
-        cicd: [],
-        ansible: []
-    };
+function parseQuestionsFromContent(content, category) {
+    const questions = [];
     
     const lines = content.split('\n');
-    let currentCategory = '';
     let currentQuestion = null;
     let inDetails = false;
     let questionContent = [];
     
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        
-        // Detect category headers (updated for cleaned headers without emojis)
-        if (line === '### Linux') {
-            currentCategory = 'linux';
-        } else if (line === '### Networking') {
-            currentCategory = 'networking';
-        } else if (line === '### Git') {
-            currentCategory = 'git';
-        } else if (line === '### AWS') {
-            currentCategory = 'aws';
-        } else if (line === '### Terraform') {
-            currentCategory = 'terraform';
-        } else if (line === '### Docker') {
-            currentCategory = 'docker';
-        } else if (line === '### Kubernetes') {
-            currentCategory = 'kubernetes';
-        } else if (line === '### DevOps methodology, practices, & Agile') {
-            currentCategory = 'devops';
-        } else if (line === '### CI/CD') {
-            currentCategory = 'cicd';
-            console.log('Switching to CI/CD category at line', i);
-            // CI/CD section uses simple list format, not details/summary
-            // We'll handle this separately after the main parsing loop
-            continue; // Skip to next line immediately
-        } else if (line === '### Ansible') {
-            currentCategory = 'ansible'; // Add Ansible category to prevent confusion
-            console.log('Switching to Ansible category at line', i);
-        }
-        
-        // Skip processing if we're in CI/CD section (handled separately)
-        if (currentCategory === 'cicd') {
-            continue;
-        }
-        
-        // Also skip if the line contains CI/CD content (bullet points)
-        if (line.startsWith('- ') && (line.includes('Continuous Integration') || 
-            line.includes('blue-green deployment') || 
-            line.includes('CI/CD pipeline') || 
-            line.includes('canary deployment') || 
-            line.includes('rolling deployment'))) {
-            continue;
-        }
         
         // Detect question start
         if (line === '<details>') {
@@ -349,7 +375,7 @@ function parseQuestionsFromContent(content) {
         // Detect question title
         if (inDetails && line.startsWith('<summary>') && line.endsWith('</summary>')) {
             const title = line.replace('<summary>', '').replace('</summary>', '');
-            currentQuestion = { title, content: '', category: currentCategory };
+            currentQuestion = { title, content: '', category: category };
         }
         
         // Collect question content
@@ -363,13 +389,11 @@ function parseQuestionsFromContent(content) {
         if (line === '</details>' && currentQuestion) {
             currentQuestion.content = questionContent.join('\n').trim();
             // Skip questions with placeholder content
-            if (currentCategory && currentQuestion.content && 
-                currentQuestion.content !== 'Answer goes here' && 
-                questions[currentCategory]) {
-                questions[currentCategory].push({
+            if (currentQuestion.content && currentQuestion.content !== 'Answer goes here') {
+                questions.push({
                     title: currentQuestion.title,
                     content: currentQuestion.content,
-                    category: getCategoryDisplayName(currentCategory)
+                    category: getCategoryDisplayName(category)
                 });
             }
             currentQuestion = null;
@@ -378,71 +402,9 @@ function parseQuestionsFromContent(content) {
         }
     }
     
-    // Special handling for CI/CD section which uses simple list format
-    parseCICDQuestions(content, questions);
-    
     return questions;
 }
 
-// Parse CI/CD questions from simple list format
-function parseCICDQuestions(content, questions) {
-    const lines = content.split('\n');
-    let inCICDSection = false;
-    let cicdQuestionCount = 0;
-    
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        
-        // Start of CI/CD section
-        if (line === '### CI/CD') {
-            inCICDSection = true;
-            console.log('Found CI/CD section at line', i);
-            continue;
-        }
-        
-        // End of CI/CD section (next section starts)
-        if (inCICDSection && line.startsWith('### ')) {
-            console.log('Ending CI/CD section at line', i, 'with', cicdQuestionCount, 'questions');
-            break;
-        }
-        
-        // Parse CI/CD questions (simple list format)
-        if (inCICDSection && line.startsWith('- ')) {
-            const questionTitle = line.substring(2).trim(); // Remove '- ' prefix
-            
-            // Create a question object with the title and a placeholder content
-            // We'll use the fallback CI/CD questions for actual content
-            questions.cicd.push({
-                title: questionTitle,
-                content: getCICDAnswerForQuestion(questionTitle),
-                category: 'CI/CD 🔄'
-            });
-            cicdQuestionCount++;
-            console.log('Added CI/CD question:', questionTitle);
-        }
-    }
-    
-    console.log('Total CI/CD questions parsed:', cicdQuestionCount);
-}
-
-// Get appropriate CI/CD answer for a question title
-function getCICDAnswerForQuestion(title) {
-    const titleLower = title.toLowerCase();
-    
-    if (titleLower.includes('continuous integration')) {
-        return "Continuous Integration (CI) is the practice of automatically integrating code changes from multiple developers into a shared repository, followed by automated builds and tests. It helps catch integration issues early and ensures code quality.";
-    } else if (titleLower.includes('blue-green deployment')) {
-        return "Blue-green deployment is a deployment strategy where you maintain two identical production environments (blue and green). One environment serves live traffic while the other is used for testing new releases. Once tested, traffic is switched to the new environment.";
-    } else if (titleLower.includes('ci/cd pipeline')) {
-        return "A CI/CD pipeline is an automated sequence of steps that code goes through from development to production, including building, testing, and deploying applications. It ensures consistent, reliable software delivery.";
-    } else if (titleLower.includes('canary deployment')) {
-        return "Canary deployment is a deployment strategy where new software is gradually rolled out to a small subset of users before being released to the entire user base. It allows for testing in production with minimal risk.";
-    } else if (titleLower.includes('rolling deployment')) {
-        return "Rolling deployment is a deployment strategy where new versions are gradually rolled out by replacing instances one by one. It ensures zero downtime and allows for quick rollback if issues are detected.";
-    } else {
-        return "This is a CI/CD related question. CI/CD (Continuous Integration/Continuous Deployment) is a set of practices that automate the software development lifecycle, from code integration to deployment.";
-    }
-}
 
 // Get category display name
 function getCategoryDisplayName(category) {
@@ -451,11 +413,16 @@ function getCategoryDisplayName(category) {
         networking: 'Networking 🌐',
         git: 'Git',
         aws: 'AWS 🌩️',
+        azure: 'Azure 🌩️',
+        cloud: 'Cloud ☁️',
         terraform: 'Terraform 🏗️',
         docker: 'Docker 🐳',
         kubernetes: 'Kubernetes 🎻',
+        'config-management': 'Config Management 🔧',
+        cicd: 'CI/CD 🔄',
         devops: 'DevOps 🛠',
-        cicd: 'CI/CD 🔄'
+        'system-design': 'System Design 🍥',
+        security: 'Security 🔒'
     };
     return displayNames[category] || category;
 }
@@ -539,31 +506,26 @@ function getFallbackQuestions() {
                 category: "DevOps 🛠"
             }
         ],
-        cicd: [
+        cicd: [],
+        cloud: [
             {
-                title: "What is CI/CD?",
-                content: "CI/CD stands for Continuous Integration and Continuous Deployment/Delivery. It's a set of practices that automate the software development lifecycle, from code integration to deployment.",
-                category: "CI/CD 🔄"
-            },
+                title: "What is cloud computing?",
+                content: "Cloud computing is the delivery of computing services including servers, storage, databases, networking, software, analytics, and intelligence over the Internet (the cloud) to offer faster innovation, flexible resources, and economies of scale.",
+                category: "Cloud ☁️"
+            }
+        ],
+        'config-management': [
             {
-                title: "What is Continuous Integration?",
-                content: "Continuous Integration (CI) is the practice of automatically integrating code changes from multiple developers into a shared repository, followed by automated builds and tests.",
-                category: "CI/CD 🔄"
-            },
+                title: "What is configuration management?",
+                content: "Configuration management is the process of systematically handling changes to a system in a way that it maintains integrity over time. It involves tracking and controlling changes to software, hardware, and documentation.",
+                category: "Config Management 🔧"
+            }
+        ],
+        security: [
             {
-                title: "What is Continuous Deployment?",
-                content: "Continuous Deployment (CD) is the practice of automatically deploying code changes to production after they pass all tests in the CI pipeline, without manual intervention.",
-                category: "CI/CD 🔄"
-            },
-            {
-                title: "What is a CI/CD pipeline?",
-                content: "A CI/CD pipeline is an automated sequence of steps that code goes through from development to production, including building, testing, and deploying applications.",
-                category: "CI/CD 🔄"
-            },
-            {
-                title: "What are popular CI/CD tools?",
-                content: "Popular CI/CD tools include Jenkins, GitHub Actions, GitLab CI, Azure DevOps, AWS CodePipeline, CircleCI, Travis CI, and Bamboo.",
-                category: "CI/CD 🔄"
+                title: "What is cybersecurity?",
+                content: "Cybersecurity is the practice of protecting systems, networks, and programs from digital attacks. These cyberattacks are usually aimed at accessing, changing, or destroying sensitive information.",
+                category: "Security 🔒"
             }
         ]
     };
@@ -620,13 +582,10 @@ function getRandomChallenge(selectedCategories = null) {
                 if (selectedLower === 'advanced' && challengeDifficulty.includes('advanced')) return true;
                 
                 // Check technology categories
-                if (selectedLower === 'kubernetes' && (challengeCategory.includes('kubernetes') || challengeTitle.includes('k8s'))) return true;
-                if (selectedLower === 'terraform' && challengeCategory.includes('terraform')) return true;
-                if (selectedLower === 'docker' && challengeCategory.includes('docker')) return true;
-                if (selectedLower === 'ansible' && challengeCategory.includes('ansible')) return true;
+                if (selectedLower === 'devops' && challengeCategory.includes('devops')) return true;
+                if (selectedLower === 'sre' && challengeCategory.includes('sre')) return true;
                 if (selectedLower === 'aws' && challengeCategory.includes('aws')) return true;
-                if (selectedLower === 'security' && challengeCategory.includes('security')) return true;
-                if (selectedLower === 'monitoring' && challengeCategory.includes('monitoring')) return true;
+                if (selectedLower === 'kubernetes' && challengeCategory.includes('kubernetes')) return true;
                 
                 return false;
             });
