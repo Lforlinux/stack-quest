@@ -538,7 +538,7 @@ function getAllQuestions() {
     return Object.values(questions).flat();
 }
 
-// Get random question from selected categories
+// Get random question from selected categories with session-based tracking
 function getRandomQuestion(selectedCategories = null) {
     let questionsToChooseFrom;
     
@@ -559,10 +559,37 @@ function getRandomQuestion(selectedCategories = null) {
         return null; // No questions available
     }
     
-    return questionsToChooseFrom[Math.floor(Math.random() * questionsToChooseFrom.length)];
+    // Get asked questions from session storage
+    const askedQuestions = JSON.parse(sessionStorage.getItem('askedQuestions') || '[]');
+    
+    // Filter out already asked questions
+    const availableQuestions = questionsToChooseFrom.filter(question => 
+        !askedQuestions.includes(question.title)
+    );
+    
+    // If all questions have been asked, reset the list and start over
+    if (availableQuestions.length === 0) {
+        console.log('All questions have been asked, resetting the list');
+        sessionStorage.removeItem('askedQuestions');
+        return questionsToChooseFrom[Math.floor(Math.random() * questionsToChooseFrom.length)];
+    }
+    
+    // Select a random question from available questions
+    const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+    const selectedQuestion = availableQuestions[randomIndex];
+    
+    // Add the selected question to asked questions
+    askedQuestions.push(selectedQuestion.title);
+    sessionStorage.setItem('askedQuestions', JSON.stringify(askedQuestions));
+    
+    console.log(`Selected question: ${selectedQuestion.title}`);
+    console.log(`Questions asked in this session: ${askedQuestions.length}`);
+    console.log(`Total available questions: ${questionsToChooseFrom.length}`);
+    
+    return selectedQuestion;
 }
 
-// Get random challenge
+// Get random challenge with session-based tracking
 function getRandomChallenge(selectedCategories = null) {
     let challengesToChooseFrom;
     
@@ -599,8 +626,45 @@ function getRandomChallenge(selectedCategories = null) {
         return null; // No challenges available
     }
     
-    return challengesToChooseFrom[Math.floor(Math.random() * challengesToChooseFrom.length)];
+    // Get asked challenges from session storage
+    const askedChallenges = JSON.parse(sessionStorage.getItem('askedChallenges') || '[]');
+    
+    // Filter out already asked challenges
+    const availableChallenges = challengesToChooseFrom.filter(challenge => 
+        !askedChallenges.includes(challenge.title)
+    );
+    
+    // If all challenges have been asked, reset the list and start over
+    if (availableChallenges.length === 0) {
+        console.log('All challenges have been asked, resetting the list');
+        sessionStorage.removeItem('askedChallenges');
+        return challengesToChooseFrom[Math.floor(Math.random() * challengesToChooseFrom.length)];
+    }
+    
+    // Select a random challenge from available challenges
+    const randomIndex = Math.floor(Math.random() * availableChallenges.length);
+    const selectedChallenge = availableChallenges[randomIndex];
+    
+    // Add the selected challenge to asked challenges
+    askedChallenges.push(selectedChallenge.title);
+    sessionStorage.setItem('askedChallenges', JSON.stringify(askedChallenges));
+    
+    console.log(`Selected challenge: ${selectedChallenge.title}`);
+    console.log(`Challenges asked in this session: ${askedChallenges.length}`);
+    console.log(`Total available challenges: ${challengesToChooseFrom.length}`);
+    
+    return selectedChallenge;
 }
+
+// Reset session tracking (useful for testing and user control)
+function resetSessionTracking() {
+    sessionStorage.removeItem('askedQuestions');
+    sessionStorage.removeItem('askedChallenges');
+    console.log('Session tracking reset - all questions and challenges are now available again');
+}
+
+// Make resetSessionTracking available globally for testing
+window.resetSessionTracking = resetSessionTracking;
 
 // Display result
 function displayResult(title, content, category = null, difficulty = null, isChallenge = false) {
