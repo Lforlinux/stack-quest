@@ -905,7 +905,26 @@ document.addEventListener('DOMContentLoaded', async function() {
         deselectAllCategories();
     });
     
-    getQuestionBtn.addEventListener('click', function() {
+    // Source toggle event listeners
+    const sourceStack = document.getElementById('sourceStack');
+    const sourceAI = document.getElementById('sourceAI');
+    const aiHintContainer = document.getElementById('aiHintContainer');
+    
+    if (sourceStack && sourceAI && aiHintContainer) {
+        sourceStack.addEventListener('change', function() {
+            if (sourceStack.checked) {
+                aiHintContainer.classList.add('hidden');
+            }
+        });
+        
+        sourceAI.addEventListener('change', function() {
+            if (sourceAI.checked) {
+                aiHintContainer.classList.remove('hidden');
+            }
+        });
+    }
+    
+    getQuestionBtn.addEventListener('click', async function() {
         if (!questionsLoaded) {
             alert('Questions are still loading. Please wait a moment and try again.');
             return;
@@ -918,13 +937,64 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
+        // If AI source selected, fetch question via local LLM API
+        const aiSelected = document.getElementById('sourceAI') && document.getElementById('sourceAI').checked;
+        if (aiSelected) {
+            try {
+                const categoryForAI = selectedCategories[0];
+                const hint = (document.getElementById('aiHint') && document.getElementById('aiHint').value.trim()) || '';
+                const res = await fetch('http://localhost:3001/api/llm/question', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category: categoryForAI, hint })
+                });
+                if (!res.ok) throw new Error('LLM API error ' + res.status);
+                const data = await res.json();
+                const aiQuestion = (data.question || '').trim();
+                if (!aiQuestion) throw new Error('Empty question from LLM');
+
+                hideCategorySelection();
+                displayResult(aiQuestion, '', getCategoryDisplayName(categoryForAI), null, false);
+
+                // Wire Show Answer button to fetch LLM answer
+                setTimeout(() => {
+                    const btnReveal = document.getElementById('btnReveal') || document.getElementById('revealBtn');
+                    if (!btnReveal) return;
+                    btnReveal.onclick = async () => {
+                        try {
+                            const ansRes = await fetch('http://localhost:3001/api/llm/answer', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ question: aiQuestion, category: categoryForAI })
+                            });
+                            if (!ansRes.ok) throw new Error('LLM API error ' + ansRes.status);
+                            const ansData = await ansRes.json();
+                            const answerMd = (ansData.answer || '').trim();
+                            const answerSection = document.querySelector('.answer-section');
+                            if (answerSection) {
+                                const contentEl = answerSection.querySelector('.answer-content');
+                                if (contentEl) contentEl.innerHTML = formatContentForDisplay(answerMd);
+                                answerSection.classList.remove('hidden');
+                            }
+                        } catch (err) {
+                            console.error('LLM answer error:', err);
+                            alert('Failed to load AI answer. Please try again.');
+                        }
+                    };
+                }, 100);
+                return;
+            } catch (err) {
+                console.error('LLM question error:', err);
+                alert('Failed to load AI question. Falling back to Stack questions.');
+            }
+        }
+
+        // Default: Stack (Markdown) questions
         const question = getRandomQuestion(selectedCategories);
-        
         if (!question) {
             alert('No questions available in the selected categories!');
             return;
         }
-        
         hideCategorySelection();
         displayResult(question.title, question.content, question.category, null, false);
     });

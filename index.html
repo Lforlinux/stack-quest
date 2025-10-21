@@ -31,7 +31,18 @@
             </div>
             
             <div id="categorySelection" class="category-selection hidden">
-                <h3>Select Categories for Random Questions</h3>
+                <h3>Select Categories for Random Question</h3>
+                <div class="source-toggle">
+                    <label>Source:</label>
+                    <input type="radio" id="sourceStack" name="questionSource" value="stack" checked>
+                    <label for="sourceStack">Stack (Markdown)</label>
+                    <input type="radio" id="sourceAI" name="questionSource" value="ai">
+                    <label for="sourceAI">AI (Ollama)</label>
+                </div>
+                <div id="aiHintContainer" class="input-group hidden">
+                    <label for="aiHint">AI Hint (e.g., "K8s networking", "Terraform state"):</label>
+                    <input type="text" id="aiHint" placeholder="Optional hint for AI">
+                </div>
                 <div class="category-grid">
                     <label class="category-checkbox">
                         <input type="checkbox" value="linux" checked>
