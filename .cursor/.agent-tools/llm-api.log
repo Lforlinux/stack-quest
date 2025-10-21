@@ -1,2 +1,0 @@
-Local LLM API listening on http://localhost:3001
-Proxying to Ollama at http://localhost:11434 using model llama3.1:8b
