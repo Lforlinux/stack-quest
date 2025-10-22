@@ -4,6 +4,15 @@ A quest for stack knowledge across DevOps, SRE, and Cloud engineering.
 
 ![StackQuest Interface](page.png)
 
+## Features
+
+- 📚 **Curated Questions**: High-quality questions across 12+ categories
+- ⚡ **Hands-on Challenges**: Practical DevOps scenarios
+- 🎯 **Category Selection**: Choose specific topics to focus on
+- 🔄 **Session Tracking**: Prevents question repetition
+- 📱 **Responsive Design**: Works on desktop and mobile
+- 🚀 **Auto Deployment**: GitHub Actions + GitHub Pages
+
 ## Content Structure
 
 ### Random Questions
